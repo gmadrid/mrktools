@@ -75,33 +75,3 @@ impl Default for Content {
         }
     }
 }
-
-/*
-{
-    "coverPageNumber": 0,
-    "dummyDocument": false,
-    "extraMetadata": {},
-    "fileType": "pdf",
-    "fontName": "",
-    "lineHeight": -1,
-    "margins": 100,
-    "orientation": "portrait",
-    "pageCount": 1,
-    "pages": [
-        "dfda01c2-43b2-4ca4-be20-80a6d6c7b183"
-    ],
-    "textAlignment": "left",
-    "textScale": 1,
-    "transform": {
-        "m11": 1,
-        "m12": 0,
-        "m13": 0,
-        "m21": 0,
-        "m22": 1,
-        "m23": 0,
-        "m31": 0,
-        "m32": 0,
-        "m33": 1
-    }
-}
-*/

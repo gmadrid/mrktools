@@ -1,8 +1,7 @@
+use super::metadata::Metadata;
 use crate::{Error, Result};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
-
-const METADATA_EXTENSION: &str = "metadata";
 
 #[derive(Debug)]
 pub struct File {
@@ -35,24 +34,6 @@ impl FileData {
     fn load(path: impl AsRef<Path>) -> Result<FileData> {
         let metadata = Metadata::load(&path)?;
         Ok(FileData { metadata })
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Metadata {
-    deleted: bool,
-    parent: String,
-    #[serde(rename = "visibleName")]
-    visible_name: String,
-}
-
-impl Metadata {
-    fn load(path: impl AsRef<Path>) -> Result<Metadata> {
-        let md_path = path.as_ref().with_extension(METADATA_EXTENSION);
-        let file = std::fs::File::open(&md_path)?;
-        let metadata = serde_json::from_reader(file)?;
-
-        Ok(metadata)
     }
 }
 

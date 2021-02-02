@@ -1,22 +1,20 @@
-mod connection;
+// mod connection;
 mod content;
-mod file;
+// mod file;
+mod metadata;
 
 use crate::Result;
-pub use connection::Connection;
+// pub use connection::Connection;
 pub use content::Content;
-use file::File;
+// use file::File;
+pub use metadata::Metadata;
 use std::fs::create_dir;
 use std::path::{Path, PathBuf};
 
-fn generate_uuid() -> String {
-    "georgeuuid".to_string()
-}
+pub const METADATA_EXTENSION: &str = "metadata";
 
-pub fn create_bare_fs(root: impl AsRef<Path>) -> Result<PathBuf> {
-    let uuid = generate_uuid();
-
-    let base = root.as_ref().join(uuid);
+pub fn create_bare_fs(uuid: impl AsRef<str>, root: impl AsRef<Path>) -> Result<PathBuf> {
+    let base = root.as_ref().join(uuid.as_ref());
 
     create_dir(&base)?;
     create_dir(&base.with_extension("highlights"))?;
@@ -25,18 +23,3 @@ pub fn create_bare_fs(root: impl AsRef<Path>) -> Result<PathBuf> {
 
     Ok(base)
 }
-
-/*
-
-| directory	| annotations will be stored here
-.cache	       | directory	| not sure but empty initially
-.content       | file	      | information including uuids for each page
-.highlights    | directory  | not sure but empty initially
-.metadata      | file	      | name, dates, type
-.pagedata      | file       | list of templates, one per page
-.pdf           | file       | the actual PDF uploaded
-.textconversion| directory  | for converted annotations; empty initially
-.thumbnails    | directory  | 362x512 pixel jpeg, one per page in document numbered 0, 1, …, n-1
-
-
-*/
