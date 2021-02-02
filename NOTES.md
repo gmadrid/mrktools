@@ -97,7 +97,4 @@ __Fields to change:__
 
 __Fields to change:__
 * lastModified
-* parent
-* type
-* version
 * visibleName

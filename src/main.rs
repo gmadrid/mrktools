@@ -1,11 +1,15 @@
-// mod remarkable;
-// mod result;
-// mod sshfs;
-// mod tester;
+use mrktools::{i2pdf, Result};
+use structopt::StructOpt;
 
-use mrktools::Result;
-// use remarkable::Connection;
-// use sshfs::{mount_sshdir, umount_sshdir};
+#[derive(Debug, StructOpt)]
+#[structopt(
+    name = "mrktools",
+    about = "A collection of tools for working with Remarkable files."
+)]
+struct Opt {
+    #[structopt(name = "FILE")]
+    file_name: String,
+}
 
 // TODO: all of these should be command line args
 // const MOUNT_POINT: &str = "/tmp/remarkable_mount";
@@ -13,32 +17,8 @@ use mrktools::Result;
 // //const REMARKABLE_PASSWORD: &str = "9aaVMBIzcD";
 // const REMARKABLE_USER: &str = "root";
 
-// fn with_sshdir<F>(f: F) -> Result<()>
-// where
-//     F: FnOnce(&Path) -> Result<()>,
-// {
-//     let mount_path = mount_sshdir(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT)?;
-//
-//     let result = f(&mount_path);
-//
-//     let res2 = umount_sshdir(&mount_path);
-//
-//     // Return any error with umount only if the passed function failed.
-//     if result.is_ok() && res2.is_err() {
-//         res2
-//     } else {
-//         result
-//     }
-// }
-
 fn main() -> Result<()> {
-    mrktools::i2pdf("./test.jpg")?;
-    // with_sshdir(|mount| {
-    //     let connection = Connection::new(mount)?;
-    //     for f in connection.files() {
-    //         println!("{}", f.visible_name()?);
-    //     }
-    //     Ok(())
-    // })
+    let opt = Opt::from_args();
+    i2pdf(opt.file_name)?;
     Ok(())
 }

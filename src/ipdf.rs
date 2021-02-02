@@ -51,8 +51,6 @@ fn create_metadata_file(file_name: impl AsRef<str>, base: impl AsRef<Path>) -> R
     let metadata_file = File::create(base.as_ref().with_extension(METADATA_EXTENSION))?;
     let metadata = Metadata::with_visible_name(file_name);
 
-    // Metadata::default();
-    // metadata.visible_name = file_name.as_ref().into();
     serde_json::to_writer(metadata_file, &metadata)?;
     Ok(())
 }
