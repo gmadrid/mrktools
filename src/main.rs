@@ -4,6 +4,7 @@ use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+const DEFAULT_DEST_DIR: &str = "./rem";
 const MOUNT_POINT_DEFAULT: &str = "/tmp/remarkable_mount";
 const REMARKABLE_HOST_DEFAULT: &str = "192.168.86.31";
 const REMARKABLE_USER_DEFAULT: &str = "root";
@@ -43,6 +44,10 @@ struct Opt {
     /// if present, generated files will be put in the specified folder on the Remarkable
     #[argh(option, short = 'p')]
     parent: Option<String>,
+
+    /// directory for output files
+    #[argh(option, short = 'o', default = "DEFAULT_DEST_DIR.to_string()")]
+    dest_dir: String,
 }
 
 impl Opt {
@@ -72,7 +77,7 @@ fn process_opts(opt: Opt) -> Result<()> {
             .as_ref()
             .map(|p| conn.find_folder(p))
             .transpose()?;
-        if let Err(err) = i2pdf(file, opt.to_gray, opt.alpha, parent_id) {
+        if let Err(err) = i2pdf(file, opt.to_gray, opt.alpha, parent_id, &opt.dest_dir) {
             error!("{}", err);
         }
     }

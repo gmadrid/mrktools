@@ -4,7 +4,7 @@ use crate::{Error, Result};
 use printpdf::*;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 const DPI: f64 = 300.0;
 
@@ -75,13 +75,13 @@ pub fn i2pdf(
     to_gray: bool,
     alpha: u8,
     parent: Option<impl AsRef<str>>,
+    output_dir: impl AsRef<Path>,
 ) -> Result<()> {
     if alpha > 100 {
         return Err(Error::AlphaRangeError(alpha));
     }
 
-    let output_dir = PathBuf::from("./rem");
-    if !output_dir.exists() {
+    if !output_dir.as_ref().exists() {
         std::fs::create_dir(&output_dir)?;
     }
     let uu = super::new_uuid();
