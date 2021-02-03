@@ -4,10 +4,14 @@ use crate::{Error, Result};
 use log::{debug, trace};
 use std::fs::read_dir;
 use std::path::PathBuf;
+use std::process::Command;
 
 const DATA_DIR: &str = ".local/share/remarkable/xochitl";
 
 pub struct Connection {
+    user: String,
+    host: String,
+
     // The connection to the Remarkable filesystem via sshfs.
     // This is never read. When dropped, it umounts the mount point.
     _mount: SshFsMount,
@@ -25,22 +29,36 @@ impl Connection {
         host: impl AsRef<str>,
         mount_point: impl AsRef<str>,
     ) -> Result<Connection> {
-        let mut mount = SshFsMount::new(user, host, mount_point.as_ref());
+        debug!("connecting");
+        let mut mount = SshFsMount::new(&user, &host, mount_point.as_ref());
         mount.mount()?;
 
-        let path = PathBuf::from(mount_point.as_ref())
-            .join(DATA_DIR)
-            .to_path_buf();
+        let path = PathBuf::from(mount_point.as_ref()).join(DATA_DIR);
 
         Ok(Connection {
+            user: user.as_ref().to_string(),
+            host: host.as_ref().to_string(),
             _mount: mount,
             lazy_files: Default::default(),
             path,
         })
     }
 
+    // TODO: move this into the connection.
+    pub fn restart(&self) -> Result<()> {
+        debug!("restart()");
+        Command::new("ssh")
+            .arg(format!("{}@{}", self.user, self.host))
+            .arg("systemctl")
+            .arg("restart")
+            .arg("xochitl")
+            .output()?;
+        trace!("restart complete");
+        Ok(())
+    }
+
     pub fn files(&mut self) -> Result<&Vec<File>> {
-        if let None = self.lazy_files {
+        if self.lazy_files.is_none() {
             let mut files = Vec::default();
 
             self.load_files(&mut files)?;
@@ -53,11 +71,11 @@ impl Connection {
 
     fn load_files(&self, files: &mut Vec<File>) -> Result<()> {
         // For now, let's just load all of the file metadata in one big go.
-        debug!("syncing");
+        debug!("loading Remarkable file metadata into local cache");
         for item in read_dir(&self.path)? {
             let item = item?;
             // Load only the content files.
-            if let Some(_) = item.path().extension() {
+            if item.path().extension().is_some() {
                 continue;
             }
             trace!(
@@ -65,7 +83,7 @@ impl Connection {
                 item.path()
                     .file_stem()
                     .map(|fs| fs.to_string_lossy().into_owned())
-                    .unwrap_or("<null>".to_owned())
+                    .unwrap_or_else(|| "<null>".to_owned())
             );
             let file = File::load(item.path())?;
             trace!("file loaded: {:?}", file);
@@ -83,14 +101,14 @@ impl Connection {
                     return true;
                 }
             }
-            return false;
+            false
         });
 
         let result = found
             .and_then(|file| file.path.file_stem())
             .and_then(|fs| fs.to_str())
             .map(|fs| fs.to_string())
-            .ok_or(Error::FolderNotFound(folder.as_ref().to_string()));
+            .ok_or_else(|| Error::FolderNotFound(folder.as_ref().to_string()));
         debug!("found: {:?}", result);
         result
     }

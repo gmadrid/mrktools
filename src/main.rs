@@ -3,7 +3,6 @@ use log::{debug, error, info};
 use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::process::Command;
 
 /// Create a PDF file with thumbnails from an image for the Remarkable.
 #[derive(FromArgs)]
@@ -39,45 +38,30 @@ const MOUNT_POINT: &str = "/tmp/remarkable_mount";
 const REMARKABLE_HOST: &str = "192.168.86.31";
 const REMARKABLE_USER: &str = "root";
 
-fn restart() -> Result<()> {
-    info!("Restarting xochitl");
-    Command::new("ssh")
-        .arg(format!("{}@{}", REMARKABLE_USER, REMARKABLE_HOST))
-        .arg("systemctl")
-        .arg("restart")
-        .arg("xochitl")
-        .output()?;
-    Ok(())
-}
-
 fn process_opts(opt: Opt) -> Result<()> {
-    {
-        let mut conn = mrktools::Connection::connect(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT)
-            .expect("conn failed");
+    let mut conn = mrktools::Connection::connect(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT)
+        .expect("conn failed");
 
-        let folder_uuid = conn.find_folder("To Draw").expect("folder not found");
-        debug!("found {}", folder_uuid);
-    }
+    let folder_uuid = conn.find_folder("To Draw").expect("folder not found");
+    debug!("found {}", folder_uuid);
 
     let should_print = opt.file_names.len() > 1;
     for file in opt.file_names {
         if should_print {
             let base_fn = PathBuf::from(&file)
                 .file_name()
-                .map(|f| OsString::from(f))
-                .unwrap_or(OsString::from(""));
+                .map(OsString::from)
+                .unwrap_or_else(|| OsString::from(""));
             info!("Processing: {}", base_fn.to_string_lossy());
         }
-        match i2pdf(file, opt.to_gray, opt.alpha) {
-            Err(e) => error!("{}", e),
-            _ => {}
+        if let Err(err) = i2pdf(file, opt.to_gray, opt.alpha) {
+            error!("{}", err);
         }
     }
 
     if opt.restart {
-        match restart() {
-            Err(e) => error!("{}", e),
-            _ => {}
+        if let Err(err) = conn.restart() {
+            error!("{}", err);
         }
     }
     Ok(())
@@ -88,9 +72,10 @@ fn main() {
 
     match argh::from_env::<Opt>().validate() {
         Err(err) => error!("{}", err),
-        Ok(opt) => match process_opts(opt) {
-            Err(err) => error!("{}", err),
-            _ => {}
-        },
+        Ok(opt) => {
+            if let Err(err) = process_opts(opt) {
+                error!("{}", err)
+            }
+        }
     }
 }

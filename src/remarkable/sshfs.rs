@@ -45,9 +45,8 @@ impl SshFsMount {
 
 impl Drop for SshFsMount {
     fn drop(&mut self) {
-        match self.unmount() {
-            Err(err) => error!("unmount error: {}", err),
-            _ => {}
+        if let Err(err) = self.unmount() {
+            error!("unmount error: {}", err);
         }
     }
 }
