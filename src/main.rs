@@ -4,6 +4,10 @@ use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+const MOUNT_POINT_DEFAULT: &str = "/tmp/remarkable_mount";
+const REMARKABLE_HOST_DEFAULT: &str = "192.168.86.31";
+const REMARKABLE_USER_DEFAULT: &str = "root";
+
 /// Create a PDF file with thumbnails from an image for the Remarkable.
 #[derive(FromArgs)]
 struct Opt {
@@ -19,6 +23,19 @@ struct Opt {
     #[argh(positional)]
     file_names: Vec<String>,
 
+    /// ip address or hostname of the Remarkable device
+    #[argh(option, short = 'h', default = "REMARKABLE_HOST_DEFAULT.to_string()")]
+    host: String,
+
+    /// username of the ssh user on the Remarkable device
+    #[argh(option, short = 'u', default = "REMARKABLE_USER_DEFAULT.to_string()")]
+    user: String,
+
+    /// directory onto which to mount the Remarkable fs.
+    /// Should not exist, and it will be deleted on a normal exit.
+    #[argh(option, short = 'm', default = "MOUNT_POINT_DEFAULT.to_string()")]
+    mount_point: String,
+
     /// if set, restart the Remarkable app when done
     #[argh(switch, short = 'r')]
     restart: bool,
@@ -33,16 +50,10 @@ impl Opt {
     }
 }
 
-// TODO: all of these should be command line args
-const MOUNT_POINT: &str = "/tmp/remarkable_mount";
-const REMARKABLE_HOST: &str = "192.168.86.31";
-const REMARKABLE_USER: &str = "root";
-
 fn process_opts(opt: Opt) -> Result<()> {
-    let mut conn = mrktools::Connection::connect(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT)
-        .expect("conn failed");
+    let mut conn = mrktools::Connection::connect(opt.user, opt.host, opt.mount_point)?;
 
-    let folder_uuid = conn.find_folder("To Draw").expect("folder not found");
+    let folder_uuid = conn.find_folder("To Draw")?;
     debug!("found {}", folder_uuid);
 
     let should_print = opt.file_names.len() > 1;
