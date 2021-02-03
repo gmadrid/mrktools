@@ -1,13 +1,18 @@
 mod connection;
+pub use connection::Connection;
+
 mod content;
+pub use content::Content;
+
 mod file;
+use file::File;
+
 mod metadata;
+pub use metadata::Metadata;
+
+mod sshfs;
 
 use crate::Result;
-pub use connection::Connection;
-pub use content::Content;
-use file::File;
-pub use metadata::Metadata;
 use std::fs::create_dir;
 use std::path::{Path, PathBuf};
 

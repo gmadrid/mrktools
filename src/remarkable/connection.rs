@@ -1,3 +1,4 @@
+use super::sshfs::SshFsMount;
 use super::File;
 use crate::{Error, Result};
 use log::debug;
@@ -7,15 +8,34 @@ use std::path::{Path, PathBuf};
 const DATA_DIR: &str = ".local/share/remarkable/xochitl";
 
 pub struct Connection {
+    // The connection to the Remarkable filesystem via sshfs.
+    mount: SshFsMount,
+
+    // List of files with metadata (or errors, if something couldn't be loaded)
     files: Vec<File>,
+
+    // The full path to the mounted file system where the xochitl files live.
     path: PathBuf,
 }
 
 impl Connection {
-    pub fn new(user_home: impl AsRef<Path>) -> Result<Connection> {
+    pub fn connect(
+        user: impl AsRef<str>,
+        host: impl AsRef<str>,
+        mount_point: impl AsRef<str>,
+    ) -> Result<Connection> {
+        let mut mount = SshFsMount::new(user, host, mount_point.as_ref());
+        mount.mount()?;
+
+        let path = PathBuf::from(mount_point.as_ref())
+            .join(DATA_DIR)
+            .to_path_buf();
+
+        // TODO: delay reading the files until needed.
         let mut conn = Connection {
+            mount,
             files: Default::default(),
-            path: user_home.as_ref().join(DATA_DIR).to_path_buf(),
+            path,
         };
         conn.sync()?;
         Ok(conn)

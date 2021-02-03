@@ -4,7 +4,6 @@ use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command;
-mod sshfs;
 
 /// Create a PDF file with thumbnails from an image for the Remarkable.
 #[derive(FromArgs)]
@@ -40,23 +39,6 @@ const MOUNT_POINT: &str = "/tmp/remarkable_mount";
 const REMARKABLE_HOST: &str = "192.168.86.31";
 const REMARKABLE_USER: &str = "root";
 
-// fn tester() {
-//     debug!("in tester");
-//     let mut mount = sshfs::SshFsMount::new(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT);
-//
-//     mount.mount().expect("cannot mount");
-//
-//     for item in std::fs::read_dir(MOUNT_POINT).expect("read_dir") {
-//         let item = item.expect("item");
-//         debug!("FILE: {}", item.file_name().to_string_lossy());
-//     }
-//
-//     Command::new("ls")
-//         .arg(MOUNT_POINT)
-//         .output()
-//         .expect("ls failed");
-// }
-//
 fn restart() -> Result<()> {
     info!("Restarting xochitl");
     Command::new("ssh")
@@ -68,22 +50,10 @@ fn restart() -> Result<()> {
     Ok(())
 }
 
-fn main() {
-    pretty_env_logger::init();
-
-    let opt = argh::from_env::<Opt>().validate();
-    if let Err(err) = opt {
-        error!("{}", err);
-        return;
-    }
-
-    let opt = opt.unwrap();
-
+fn process_opts(opt: Opt) -> Result<()> {
     {
-        let mut mount = sshfs::SshFsMount::new(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT);
-        mount.mount().expect("failed to mount");
-
-        let mut conn = mrktools::Connection::new(MOUNT_POINT).expect("conn failed");
+        let mut conn = mrktools::Connection::connect(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT)
+            .expect("conn failed");
 
         let folder_uuid = conn.find_folder("To Draw").expect("folder not found");
         debug!("found {}", folder_uuid);
@@ -109,5 +79,18 @@ fn main() {
             Err(e) => error!("{}", e),
             _ => {}
         }
+    }
+    Ok(())
+}
+
+fn main() {
+    pretty_env_logger::init();
+
+    match argh::from_env::<Opt>().validate() {
+        Err(err) => error!("{}", err),
+        Ok(opt) => match process_opts(opt) {
+            Err(err) => error!("{}", err),
+            _ => {}
+        },
     }
 }
