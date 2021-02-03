@@ -1,7 +1,10 @@
 use argh::FromArgs;
+use log::{debug, error, info};
 use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
+use std::process::Command;
+mod sshfs;
 
 /// Create a PDF file with thumbnails from an image for the Remarkable.
 #[derive(FromArgs)]
@@ -17,6 +20,10 @@ struct Opt {
     /// file names to convert to Remarkable FDF files
     #[argh(positional)]
     file_names: Vec<String>,
+
+    /// if set, restart the Remarkable app when done
+    #[argh(switch, short = 'r')]
+    restart: bool,
 }
 
 impl Opt {
@@ -29,19 +36,58 @@ impl Opt {
 }
 
 // TODO: all of these should be command line args
-// const MOUNT_POINT: &str = "/tmp/remarkable_mount";
-// const REMARKABLE_HOST: &str = "192.168.86.31";
-// //const REMARKABLE_PASSWORD: &str = "9aaVMBIzcD";
-// const REMARKABLE_USER: &str = "root";
+const MOUNT_POINT: &str = "/tmp/remarkable_mount";
+const REMARKABLE_HOST: &str = "192.168.86.31";
+const REMARKABLE_USER: &str = "root";
+
+// fn tester() {
+//     debug!("in tester");
+//     let mut mount = sshfs::SshFsMount::new(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT);
+//
+//     mount.mount().expect("cannot mount");
+//
+//     for item in std::fs::read_dir(MOUNT_POINT).expect("read_dir") {
+//         let item = item.expect("item");
+//         debug!("FILE: {}", item.file_name().to_string_lossy());
+//     }
+//
+//     Command::new("ls")
+//         .arg(MOUNT_POINT)
+//         .output()
+//         .expect("ls failed");
+// }
+//
+fn restart() -> Result<()> {
+    info!("Restarting xochitl");
+    Command::new("ssh")
+        .arg(format!("{}@{}", REMARKABLE_USER, REMARKABLE_HOST))
+        .arg("systemctl")
+        .arg("restart")
+        .arg("xochitl")
+        .output()?;
+    Ok(())
+}
 
 fn main() {
+    pretty_env_logger::init();
+
     let opt = argh::from_env::<Opt>().validate();
     if let Err(err) = opt {
-        eprintln!("Error: {}", err);
+        error!("{}", err);
         return;
     }
 
     let opt = opt.unwrap();
+
+    {
+        let mut mount = sshfs::SshFsMount::new(REMARKABLE_USER, REMARKABLE_HOST, MOUNT_POINT);
+        mount.mount().expect("failed to mount");
+
+        let mut conn = mrktools::Connection::new(MOUNT_POINT).expect("conn failed");
+
+        let folder_uuid = conn.find_folder("To Draw").expect("folder not found");
+        debug!("found {}", folder_uuid);
+    }
 
     let should_print = opt.file_names.len() > 1;
     for file in opt.file_names {
@@ -50,10 +96,17 @@ fn main() {
                 .file_name()
                 .map(|f| OsString::from(f))
                 .unwrap_or(OsString::from(""));
-            println!("Processing: {}", base_fn.to_string_lossy());
+            info!("Processing: {}", base_fn.to_string_lossy());
         }
         match i2pdf(file, opt.to_gray, opt.alpha) {
-            Err(e) => eprintln!("Error: {}", e),
+            Err(e) => error!("{}", e),
+            _ => {}
+        }
+    }
+
+    if opt.restart {
+        match restart() {
+            Err(e) => error!("{}", e),
             _ => {}
         }
     }

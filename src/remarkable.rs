@@ -1,12 +1,12 @@
-// mod connection;
+mod connection;
 mod content;
-// mod file;
+mod file;
 mod metadata;
 
 use crate::Result;
-// pub use connection::Connection;
+pub use connection::Connection;
 pub use content::Content;
-// use file::File;
+use file::File;
 pub use metadata::Metadata;
 use std::fs::create_dir;
 use std::path::{Path, PathBuf};

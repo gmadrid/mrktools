@@ -1,7 +1,7 @@
 ## Tasks
 
 
-### First task: image to pdf with thumbnails.
+### Task: image to pdf with thumbnails. __DONE__
 
 1. create directories
 2. open image
@@ -17,10 +17,18 @@
 
 #### Expected options (bold for v1)
 
-* ___file___: filename of the input image
-* dest: directory in which to write the data. If missing, a temp directory will be used, and deleted when the process exits.
-* alpha(-a): alpha to apply to image (default: 25)
-* rmpath: mount point of the Remarkable root directory. If present, copy the book into place when done. (default: None)
+* file: filename of the input images  DONE
+* dest: directory in which to write the data. If missing, a temp directory will be used, and deleted when the process exits.  __TODO__
+* alpha(-a): alpha to apply to image (default: 25)  DONE
+* rmpath: mount point of the Remarkable root directory. If present, copy the book into place when done. (default: None)  DONE
+* install(-i): __TODO__ copy the files into place
+* restart(-r): __TODO__ restart the xochitl app.
+* parent(-p): __TODO__ put in the requested parent folder (by name, not ID)
+
+### Task: Copy files/dirs to Remarkable
+
+
+### Task: Grab all files for a book (by name?).
 
 
 

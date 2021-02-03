@@ -10,8 +10,10 @@ edition = "2018"
 
 [dependencies]
 argh = "0.1"
+log = "0.4"
 mktemp = "0.4"
 num-traits = "0.2"
+pretty_env_logger = "0.4"
 printpdf = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

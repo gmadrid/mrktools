@@ -1,4 +1,6 @@
+use crate::Result;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
@@ -10,7 +12,6 @@ pub struct Metadata {
     metadatamodified: bool,
     modified: bool,
 
-    #[serde(rename = "")]
     parent: String,
     pinned: bool,
     synced: bool,
@@ -22,19 +23,28 @@ pub struct Metadata {
 }
 
 impl Metadata {
+    pub fn with_name_and_parent(name: impl AsRef<str>, parent: impl AsRef<str>) -> Metadata {
+        Metadata {
+            parent: parent.as_ref().into(),
+            visible_name: name.as_ref().into(),
+            ..Default::default()
+        }
+    }
+
     pub fn with_visible_name(name: impl AsRef<str>) -> Metadata {
         Metadata {
             visible_name: name.as_ref().into(),
             ..Default::default()
         }
     }
-    // pub fn load(path: impl AsRef<Path>) -> Result<Metadata> {
-    //     let md_path = path.as_ref().with_extension(super::METADATA_EXTENSION);
-    //     let file = std::fs::File::open(&md_path)?;
-    //     let metadata = serde_json::from_reader(file)?;
-    //
-    //     Ok(metadata)
-    // }
+
+    pub fn load(path: impl AsRef<Path>) -> Result<Metadata> {
+        let md_path = path.as_ref().with_extension(super::METADATA_EXTENSION);
+        let file = std::fs::File::open(&md_path)?;
+        let metadata = serde_json::from_reader(file)?;
+
+        Ok(metadata)
+    }
 }
 
 impl Default for Metadata {

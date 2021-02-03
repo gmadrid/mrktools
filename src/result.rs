@@ -9,6 +9,9 @@ pub enum Error {
     #[error("The file at {0} failed to load")]
     FileFailedToLoad(PathBuf),
 
+    #[error("The folder, {0}, was not found on the Remarkable")]
+    FolderNotFound(String),
+
     #[error("The mount point, '{0}', already exists.")]
     MountPointExistsErr(PathBuf),
 

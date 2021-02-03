@@ -1,12 +1,11 @@
 use super::metadata::Metadata;
 use crate::{Error, Result};
-use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct File {
-    path: PathBuf,
-    filedata: Result<FileData>,
+    pub(crate) path: PathBuf,
+    pub(crate) filedata: Result<FileData>,
 }
 
 impl File {
@@ -27,7 +26,7 @@ impl File {
 
 #[derive(Debug)]
 pub struct FileData {
-    metadata: Metadata,
+    pub(crate) metadata: Metadata,
 }
 
 impl FileData {
