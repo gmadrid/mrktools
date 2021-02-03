@@ -8,7 +8,7 @@ use structopt::StructOpt;
 )]
 struct Opt {
     #[structopt(name = "FILE")]
-    file_name: String,
+    file_names: Vec<String>,
 }
 
 // TODO: all of these should be command line args
@@ -19,6 +19,8 @@ struct Opt {
 
 fn main() -> Result<()> {
     let opt = Opt::from_args();
-    i2pdf(opt.file_name)?;
+    for file in opt.file_names {
+        i2pdf(file)?;
+    }
     Ok(())
 }
