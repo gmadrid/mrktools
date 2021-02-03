@@ -1,18 +1,19 @@
 use super::sshfs::SshFsMount;
 use super::File;
 use crate::{Error, Result};
-use log::debug;
+use log::{debug, trace};
 use std::fs::read_dir;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 const DATA_DIR: &str = ".local/share/remarkable/xochitl";
 
 pub struct Connection {
     // The connection to the Remarkable filesystem via sshfs.
-    mount: SshFsMount,
+    // This is never read. When dropped, it umounts the mount point.
+    _mount: SshFsMount,
 
     // List of files with metadata (or errors, if something couldn't be loaded)
-    files: Vec<File>,
+    lazy_files: Option<Vec<File>>,
 
     // The full path to the mounted file system where the xochitl files live.
     path: PathBuf,
@@ -31,17 +32,26 @@ impl Connection {
             .join(DATA_DIR)
             .to_path_buf();
 
-        // TODO: delay reading the files until needed.
-        let mut conn = Connection {
-            mount,
-            files: Default::default(),
+        Ok(Connection {
+            _mount: mount,
+            lazy_files: Default::default(),
             path,
-        };
-        conn.sync()?;
-        Ok(conn)
+        })
     }
 
-    pub fn sync(&mut self) -> Result<()> {
+    pub fn files(&mut self) -> Result<&Vec<File>> {
+        if let None = self.lazy_files {
+            let mut files = Vec::default();
+
+            self.load_files(&mut files)?;
+
+            self.lazy_files = Some(files);
+        }
+        // unwrap, at this point, lazy_files should be populated.
+        Ok(self.lazy_files.as_ref().unwrap())
+    }
+
+    fn load_files(&self, files: &mut Vec<File>) -> Result<()> {
         // For now, let's just load all of the file metadata in one big go.
         debug!("syncing");
         for item in read_dir(&self.path)? {
@@ -50,7 +60,7 @@ impl Connection {
             if let Some(_) = item.path().extension() {
                 continue;
             }
-            debug!(
+            trace!(
                 "loading {}",
                 item.path()
                     .file_stem()
@@ -58,17 +68,17 @@ impl Connection {
                     .unwrap_or("<null>".to_owned())
             );
             let file = File::load(item.path())?;
-            debug!("file loaded: {:?}", file);
-            self.files.push(file);
+            trace!("file loaded: {:?}", file);
+            files.push(file);
         }
-        debug!("read {} files", self.files.len());
+        debug!("read {} files", files.len());
         Ok(())
     }
 
     pub fn find_folder(&mut self, folder: impl AsRef<str>) -> Result<String> {
         debug!("finding '{}'", folder.as_ref());
-        let found = self.files.iter().find(|f| {
-            if let Ok(file_data) = f.filedata.as_ref() {
+        let found = self.files()?.iter().find(|f| {
+            if let Ok(file_data) = &f.filedata {
                 if file_data.metadata.visible_name == folder.as_ref() {
                     return true;
                 }
@@ -83,9 +93,5 @@ impl Connection {
             .ok_or(Error::FolderNotFound(folder.as_ref().to_string()));
         debug!("found: {:?}", result);
         result
-    }
-
-    pub fn files(&self) -> impl Iterator<Item = &File> {
-        self.files.iter()
     }
 }
