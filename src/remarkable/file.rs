@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct File {
-    pub(crate) path: PathBuf,
-    pub(crate) filedata: Result<FileData>,
+    pub path: PathBuf,
+    pub filedata: Result<FileData>,
 }
 
 impl File {
@@ -19,14 +19,21 @@ impl File {
             .map_err(|_| Error::FileFailedToLoad(self.path.clone()))
     }
 
+    pub fn id(&self) -> String {
+        self.path
+            .file_stem()
+            .map(|fs| fs.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "<null>".to_string())
+    }
+
     pub fn visible_name(&self) -> Result<&str> {
         self.with_filedata(|fd| fd.metadata.visible_name.as_str())
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FileData {
-    pub(crate) metadata: Metadata,
+    pub metadata: Metadata,
 }
 
 impl FileData {

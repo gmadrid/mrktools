@@ -4,7 +4,7 @@ mod remarkable;
 mod result;
 
 pub use ipdf::i2pdf;
-pub use remarkable::Connection;
+pub use remarkable::{Connection, File};
 pub use result::{Error, Result};
 use uuid::Uuid;
 

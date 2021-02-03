@@ -2,7 +2,7 @@ use crate::Result;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metadata {
     deleted: bool,
     #[serde(rename = "lastModified")]
@@ -12,14 +12,14 @@ pub struct Metadata {
     metadatamodified: bool,
     modified: bool,
 
-    parent: String,
+    pub parent: String,
     pinned: bool,
     synced: bool,
     #[serde(rename = "type")]
-    pub(crate) typ: String,
+    pub typ: String,
     version: u32,
     #[serde(rename = "visibleName")]
-    pub(crate) visible_name: String,
+    pub visible_name: String,
 }
 
 impl Metadata {

@@ -1,6 +1,7 @@
 use argh::FromArgs;
 use log::{error, info};
-use mrktools::{i2pdf, Error, Result};
+use mrktools::{i2pdf, Error, File, Result};
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -48,6 +49,10 @@ struct Opt {
     /// directory for output files
     #[argh(option, short = 'o', default = "DEFAULT_DEST_DIR.to_string()")]
     dest_dir: String,
+
+    /// ls, this should be a subcommand
+    #[argh(switch)]
+    ls: bool,
 }
 
 impl Opt {
@@ -59,8 +64,51 @@ impl Opt {
     }
 }
 
+fn ls(conn: &mut mrktools::Connection) -> Result<()> {
+    let files = conn.files()?;
+
+    //let mut file_set: HashSet<&File> = files.iter().collect();
+    let mut file_hash: HashMap<String, Vec<&File>> = Default::default();
+    for file in files.iter() {
+        if let Ok(file_data) = file.filedata.as_ref() {
+            let v = file_hash
+                .entry(file_data.metadata.parent.clone())
+                .or_default();
+            v.push(file);
+        }
+    }
+
+    ls_helper(&file_hash, "", "");
+
+    Ok(())
+}
+
+fn ls_helper(file_hash: &HashMap<String, Vec<&File>>, parent: &str, prefix: &str) {
+    if let Some(curr_vec) = file_hash.get(parent) {
+        let mut sorted_vec = curr_vec.iter().collect::<Vec<_>>();
+        // unwrap: just rewrite this.
+        sorted_vec.sort_by(|f1, f2| f1.visible_name().unwrap().cmp(f2.visible_name().unwrap()));
+        for file in sorted_vec {
+            if let Ok(file_data) = file.filedata.as_ref() {
+                if file_data.metadata.typ == "CollectionType" {
+                    println!("{}{}/", prefix, file_data.metadata.visible_name);
+                    ls_helper(file_hash, &file.id(), &format!("   {}", prefix));
+                } else {
+                    println!("{}{}", prefix, file_data.metadata.visible_name);
+                }
+            }
+        }
+    } else {
+        eprintln!("EXPECTED TO FIND: {}", parent);
+    }
+}
+
 fn process_opts(opt: Opt) -> Result<()> {
     let mut conn = mrktools::Connection::connect(opt.user, opt.host, opt.mount_point)?;
+
+    if opt.ls {
+        return ls(&mut conn);
+    }
 
     let should_print = opt.file_names.len() > 1;
     for file in opt.file_names {

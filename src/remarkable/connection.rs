@@ -77,10 +77,9 @@ impl Connection {
             let item = item?;
             // Load only the metadata files.
             // TODO: can this be made nicer.
-            if !(item.path().extension() == Some(metadata_os_str.as_os_str())) {
+            if item.path().extension() != Some(metadata_os_str.as_os_str()) {
                 continue;
             }
-            // /tmp/mnt/.local/share/remarkable/xochitl/83755268-dee1-44c9-be3a-cc8a111ce2d0.metadata
             trace!(
                 "loading {}",
                 item.path()
