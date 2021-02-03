@@ -3,6 +3,9 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Alpha value, {0}, out of range, [0..100]")]
+    AlphaRangeError(u8),
+
     #[error("The file at {0} failed to load")]
     FileFailedToLoad(PathBuf),
 

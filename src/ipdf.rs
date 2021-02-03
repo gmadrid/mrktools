@@ -1,6 +1,6 @@
 use crate::imgtools::process_image;
 use crate::remarkable::{create_bare_fs, Content, Metadata, METADATA_EXTENSION};
-use crate::Result;
+use crate::{Error, Result};
 use printpdf::*;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -63,7 +63,11 @@ fn create_pagedata_file(base: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-pub fn i2pdf(img: impl AsRef<Path>) -> Result<()> {
+pub fn i2pdf(img: impl AsRef<Path>, to_gray: bool, alpha: u8) -> Result<()> {
+    if alpha > 100 {
+        return Err(Error::AlphaRangeError(alpha));
+    }
+
     let output_dir = PathBuf::from("./rem");
     if !output_dir.exists() {
         std::fs::create_dir(&output_dir)?;
@@ -72,7 +76,7 @@ pub fn i2pdf(img: impl AsRef<Path>) -> Result<()> {
     let base = create_bare_fs(&uu, &output_dir)?;
 
     let image = open_image(img.as_ref())?;
-    let processed_image = process_image(&image, true, 25)?;
+    let processed_image = process_image(&image, to_gray, alpha)?;
 
     let pdf = create_pdf(&img.as_ref().to_string_lossy(), &processed_image);
     let outfile = base.with_extension("pdf");
