@@ -1,22 +1,22 @@
+use argh::FromArgs;
 use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "mrktools",
-    about = "A collection of tools for working with Remarkable files."
-)]
+/// Create a PDF file with thumbnails from an image for the Remarkable.
+#[derive(FromArgs)]
 struct Opt {
-    #[structopt(name = "FILE")]
-    file_names: Vec<String>,
-
-    #[structopt(short = "a", long = "alpha", default_value = "100")]
+    /// alpha value to be multiplied by the image, range [0-100].
+    #[argh(option, short = 'a', default = "100")]
     alpha: u8,
 
-    #[structopt(short = "g", long = "gray")]
+    /// convert pdf to grayscale
+    #[argh(switch, short = 'g')]
     to_gray: bool,
+
+    /// file names to convert to Remarkable FDF files
+    #[argh(positional)]
+    file_names: Vec<String>,
 }
 
 impl Opt {
@@ -35,7 +35,7 @@ impl Opt {
 // const REMARKABLE_USER: &str = "root";
 
 fn main() {
-    let opt = Opt::from_args().validate();
+    let opt = argh::from_env::<Opt>().validate();
     if let Err(err) = opt {
         eprintln!("Error: {}", err);
         return;
