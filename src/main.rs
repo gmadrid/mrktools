@@ -1,5 +1,5 @@
 use argh::FromArgs;
-use log::{debug, error, info};
+use log::{error, info};
 use mrktools::{i2pdf, Error, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -39,6 +39,10 @@ struct Opt {
     /// if set, restart the Remarkable app when done
     #[argh(switch, short = 'r')]
     restart: bool,
+
+    /// if present, generated files will be put in the specified folder on the Remarkable
+    #[argh(option, short = 'p')]
+    parent: Option<String>,
 }
 
 impl Opt {
@@ -53,9 +57,6 @@ impl Opt {
 fn process_opts(opt: Opt) -> Result<()> {
     let mut conn = mrktools::Connection::connect(opt.user, opt.host, opt.mount_point)?;
 
-    let folder_uuid = conn.find_folder("To Draw")?;
-    debug!("found {}", folder_uuid);
-
     let should_print = opt.file_names.len() > 1;
     for file in opt.file_names {
         if should_print {
@@ -65,7 +66,13 @@ fn process_opts(opt: Opt) -> Result<()> {
                 .unwrap_or_else(|| OsString::from(""));
             info!("Processing: {}", base_fn.to_string_lossy());
         }
-        if let Err(err) = i2pdf(file, opt.to_gray, opt.alpha) {
+
+        let parent_id = opt
+            .parent
+            .as_ref()
+            .map(|p| conn.find_folder(p))
+            .transpose()?;
+        if let Err(err) = i2pdf(file, opt.to_gray, opt.alpha, parent_id) {
             error!("{}", err);
         }
     }

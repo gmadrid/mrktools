@@ -22,7 +22,7 @@
 * alpha(-a): alpha to apply to image (default: 25)  DONE
 * rmpath: mount point of the Remarkable root directory. If present, copy the book into place when done. (default: None)  DONE
 * install(-i): __TODO__ copy the files into place
-* restart(-r): __TODO__ restart the xochitl app.
+* restart(-r): restart the xochitl app.  DONE
 * parent(-p): __TODO__ put in the requested parent folder (by name, not ID)
 
 ### Task: Copy files/dirs to Remarkable

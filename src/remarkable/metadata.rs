@@ -7,7 +7,7 @@ pub struct Metadata {
     deleted: bool,
     #[serde(rename = "lastModified")]
     last_modified: String,
-    #[serde(rename = "lastOpenedPage")]
+    #[serde(rename = "lastOpenedPage", default)]
     last_opened_page: u32,
     metadatamodified: bool,
     modified: bool,
@@ -16,7 +16,7 @@ pub struct Metadata {
     pinned: bool,
     synced: bool,
     #[serde(rename = "type")]
-    typ: String,
+    pub(crate) typ: String,
     version: u32,
     #[serde(rename = "visibleName")]
     pub(crate) visible_name: String,
@@ -26,13 +26,6 @@ impl Metadata {
     pub fn with_name_and_parent(name: impl AsRef<str>, parent: impl AsRef<str>) -> Metadata {
         Metadata {
             parent: parent.as_ref().into(),
-            visible_name: name.as_ref().into(),
-            ..Default::default()
-        }
-    }
-
-    pub fn with_visible_name(name: impl AsRef<str>) -> Metadata {
-        Metadata {
             visible_name: name.as_ref().into(),
             ..Default::default()
         }

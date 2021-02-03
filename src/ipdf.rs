@@ -47,9 +47,16 @@ fn write_thumbnail(
     Ok(())
 }
 
-fn create_metadata_file(file_name: impl AsRef<str>, base: impl AsRef<Path>) -> Result<()> {
+fn create_metadata_file(
+    file_name: impl AsRef<str>,
+    base: impl AsRef<Path>,
+    parent: Option<impl AsRef<str>>,
+) -> Result<()> {
     let metadata_file = File::create(base.as_ref().with_extension(METADATA_EXTENSION))?;
-    let metadata = Metadata::with_visible_name(file_name);
+    let metadata = Metadata::with_name_and_parent(
+        file_name,
+        parent.as_ref().map(|p| p.as_ref()).unwrap_or(""),
+    );
 
     serde_json::to_writer(metadata_file, &metadata)?;
     Ok(())
@@ -63,7 +70,12 @@ fn create_pagedata_file(base: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-pub fn i2pdf(img: impl AsRef<Path>, to_gray: bool, alpha: u8) -> Result<()> {
+pub fn i2pdf(
+    img: impl AsRef<Path>,
+    to_gray: bool,
+    alpha: u8,
+    parent: Option<impl AsRef<str>>,
+) -> Result<()> {
     if alpha > 100 {
         return Err(Error::AlphaRangeError(alpha));
     }
@@ -89,7 +101,11 @@ pub fn i2pdf(img: impl AsRef<Path>, to_gray: bool, alpha: u8) -> Result<()> {
     serde_json::to_writer(content_file, &content)?;
 
     // TODO: clear out this unwrap.
-    create_metadata_file(&img.as_ref().file_name().unwrap().to_string_lossy(), &base)?;
+    create_metadata_file(
+        &img.as_ref().file_name().unwrap().to_string_lossy(),
+        &base,
+        parent,
+    )?;
     create_pagedata_file(&base)?;
 
     let small_image = resize_image(&image, 362, 512);
