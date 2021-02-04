@@ -2,6 +2,7 @@ use super::sshfs::SshFsMount;
 use super::File;
 use crate::{Error, Result};
 use log::{debug, trace};
+use std::cell::{Ref, RefCell};
 use std::fs::read_dir;
 use std::path::PathBuf;
 use std::process::Command;
@@ -17,7 +18,7 @@ pub struct Connection {
     _mount: SshFsMount,
 
     // List of files with metadata (or errors, if something couldn't be loaded)
-    lazy_files: Option<Vec<File>>,
+    lazy_files: RefCell<Option<Vec<File>>>,
 
     // The full path to the mounted file system where the xochitl files live.
     path: PathBuf,
@@ -56,16 +57,16 @@ impl Connection {
         Ok(())
     }
 
-    pub fn files(&mut self) -> Result<&Vec<File>> {
-        if self.lazy_files.is_none() {
+    pub fn files(&self) -> Result<Ref<Vec<File>>> {
+        if self.lazy_files.borrow().is_none() {
+            debug!("Loading file cache.");
             let mut files = Vec::default();
-
             self.load_files(&mut files)?;
 
-            self.lazy_files = Some(files);
+            self.lazy_files.replace(Some(files));
         }
-        // unwrap, at this point, lazy_files should be populated.
-        Ok(self.lazy_files.as_ref().unwrap())
+        // unwrap: at this point, lazy_files should be populated.
+        Ok(Ref::map(self.lazy_files.borrow(), |o| o.as_ref().unwrap()))
     }
 
     fn load_files(&self, files: &mut Vec<File>) -> Result<()> {
@@ -74,7 +75,7 @@ impl Connection {
         for item in read_dir(&self.path)? {
             let item = item?;
             // Load only the metadata files.
-            if item.path().extension().map_or(false, |f| f != "metadata") {
+            if item.path().extension().map_or(true, |f| f != "metadata") {
                 continue;
             }
             trace!(
@@ -92,9 +93,10 @@ impl Connection {
         Ok(())
     }
 
-    pub fn find_folder(&mut self, folder: impl AsRef<str>) -> Result<String> {
+    pub fn find_folder(&self, folder: impl AsRef<str>) -> Result<String> {
         debug!("finding '{}'", folder.as_ref());
-        let found = self.files()?.iter().find(|f| {
+        let file_ref = self.files()?;
+        let found = file_ref.iter().find(|f| {
             if let Ok(file_data) = &f.filedata {
                 if file_data.metadata.visible_name == folder.as_ref()
                     && file_data.metadata.typ == "CollectionType"

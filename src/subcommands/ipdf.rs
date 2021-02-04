@@ -40,7 +40,7 @@ pub struct IPdfArgs {
     dest_dir: String,
 }
 
-pub fn ipdf(conn: &mut Connection, opt: IPdfArgs) -> Result<()> {
+pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
     let should_print = opt.file_names.len() > 1;
     for file in opt.file_names {
         if should_print {

@@ -42,8 +42,7 @@ fn with_connection<F>(
     f: F,
 ) -> Result<()>
 where
-    // TODO: get this "mut" out of here
-    F: FnOnce(&mut Connection) -> Result<()>,
+    F: FnOnce(&Connection) -> Result<()>,
 {
     let mut conn = Connection::connect(user, host, mount_point)?;
     f(&mut conn)

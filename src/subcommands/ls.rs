@@ -9,14 +9,13 @@ use std::collections::HashMap;
 #[argh(subcommand, name = "ls")]
 pub struct LsArgs {}
 
-pub fn ls(conn: &mut Connection, _: LsArgs) -> Result<()> {
+pub fn ls(conn: &Connection, _: LsArgs) -> Result<()> {
     ls_func(conn)
 }
 
-fn ls_func(conn: &mut Connection) -> Result<()> {
+fn ls_func(conn: &Connection) -> Result<()> {
     let files = conn.files()?;
 
-    //let mut file_set: HashSet<&File> = files.iter().collect();
     let mut file_hash: HashMap<String, Vec<&File>> = Default::default();
     for file in files.iter() {
         if let Ok(file_data) = file.filedata.as_ref() {
