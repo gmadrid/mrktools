@@ -75,7 +75,7 @@ impl Connection {
         for item in read_dir(&self.path)? {
             let item = item?;
             // Load only the metadata files.
-            if item.path().extension().map_or(true, |f| f != "metadata") {
+            if !item.path().extension().map_or(false, |f| f == "metadata") {
                 continue;
             }
             trace!(
