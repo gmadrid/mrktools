@@ -54,7 +54,7 @@ impl Default for Metadata {
             parent: "".into(),
             pinned: false,
             synced: false,
-            typ: "DocumentType".into(), // TODO: check this
+            typ: "DocumentType".into(),
             version: 2,
             visible_name: "".into(),
         }
