@@ -1,3 +1,10 @@
+## TODOs
+
+* lazy connection to sshfs
+* warn before attempting to connect to SSHFS
+  * with option to skip warning
+* add option to mount on existing dir
+
 ## Tasks
 
 
@@ -17,13 +24,13 @@
 
 #### Expected options (bold for v1)
 
-* file: filename of the input images  DONE
-* dest: directory in which to write the data. If missing, a temp directory will be used, and deleted when the process exits.  __TODO__
-* alpha(-a): alpha to apply to image (default: 25)  DONE
-* rmpath: mount point of the Remarkable root directory. If present, copy the book into place when done. (default: None)  DONE
+* file: filename of the input images
+* dest: directory in which to write the data. If missing, a temp directory will be used, and deleted when the process exits.
+* alpha(-a): alpha to apply to image (default: 25)
+* rmpath: mount point of the Remarkable root directory. If present, copy the book into place when done. (default: None)
 * install(-i): __TODO__ copy the files into place
-* restart(-r): restart the xochitl app.  DONE
-* parent(-p): __TODO__ put in the requested parent folder (by name, not ID)
+* restart(-r): restart the xochitl app.
+* parent(-p): put in the requested parent folder (by name, not ID)
 
 ### Task: Copy files/dirs to Remarkable
 

@@ -5,6 +5,7 @@ use crate::{Error, Result};
 use argh::FromArgs;
 use log::{error, info};
 use printpdf::*;
+use std::borrow::Cow;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -92,9 +93,11 @@ fn ipdf_func(
     content.add_page(&page_uuid);
     serde_json::to_writer(content_file, &content)?;
 
-    // TODO: clear out this unwrap.
     create_metadata_file(
-        &img.as_ref().file_name().unwrap().to_string_lossy(),
+        &img.as_ref()
+            .file_name()
+            .map(|f| f.to_string_lossy())
+            .unwrap_or(Cow::Borrowed("<null>")),
         &base,
         parent,
     )?;

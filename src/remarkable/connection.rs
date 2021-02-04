@@ -44,7 +44,6 @@ impl Connection {
         })
     }
 
-    // TODO: move this into the connection.
     pub fn restart(&self) -> Result<()> {
         debug!("restart()");
         Command::new("ssh")
