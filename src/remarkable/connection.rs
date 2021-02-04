@@ -71,12 +71,10 @@ impl Connection {
     fn load_files(&self, files: &mut Vec<File>) -> Result<()> {
         // For now, let's just load all of the file metadata in one big go.
         debug!("loading Remarkable file metadata into local cache");
-        let metadata_os_str = std::ffi::OsString::from("metadata");
         for item in read_dir(&self.path)? {
             let item = item?;
             // Load only the metadata files.
-            // TODO: can this be made nicer.
-            if item.path().extension() != Some(metadata_os_str.as_os_str()) {
+            if item.path().extension().map_or(false, |f| f != "metadata") {
                 continue;
             }
             trace!(
