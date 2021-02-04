@@ -1,6 +1,6 @@
 use argh::FromArgs;
 use log::{error, info};
-use mrktools::{i2pdf, Error, File, Result};
+use mrktools::{i2pdf, Connection, File, Result};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -10,21 +10,9 @@ const MOUNT_POINT_DEFAULT: &str = "/tmp/remarkable_mount";
 const REMARKABLE_HOST_DEFAULT: &str = "192.168.86.31";
 const REMARKABLE_USER_DEFAULT: &str = "root";
 
-/// Create a PDF file with thumbnails from an image for the Remarkable.
-#[derive(FromArgs)]
-struct Opt {
-    /// alpha value to be multiplied by the image, range [0-100].
-    #[argh(option, short = 'a', default = "100")]
-    alpha: u8,
-
-    /// convert pdf to grayscale
-    #[argh(switch, short = 'g')]
-    to_gray: bool,
-
-    /// file names to convert to Remarkable FDF files
-    #[argh(positional)]
-    file_names: Vec<String>,
-
+#[derive(FromArgs, Debug)]
+/// Top-level commands
+struct Commands {
     /// ip address or hostname of the Remarkable device
     #[argh(option, short = 'h', default = "REMARKABLE_HOST_DEFAULT.to_string()")]
     host: String,
@@ -38,9 +26,33 @@ struct Opt {
     #[argh(option, short = 'm', default = "MOUNT_POINT_DEFAULT.to_string()")]
     mount_point: String,
 
-    /// if set, restart the Remarkable app when done
-    #[argh(switch, short = 'r')]
-    restart: bool,
+    #[argh(subcommand)]
+    nested: CommandsEnum,
+}
+
+#[derive(FromArgs, Debug)]
+#[argh(subcommand)]
+enum CommandsEnum {
+    IPdf(IPdfArgs),
+    Ls(LsArgs),
+    Restart(RestartArgs),
+}
+
+#[derive(FromArgs, Debug)]
+/// convert images to Remarkable-ready pdfs with a main thumbnail
+#[argh(subcommand, name = "ipdf")]
+struct IPdfArgs {
+    /// alpha value to be multiplied by the image, range [0-100].
+    #[argh(option, short = 'a', default = "100")]
+    alpha: u8,
+
+    /// convert pdf to grayscale
+    #[argh(switch, short = 'g')]
+    to_gray: bool,
+
+    /// file names to convert to Remarkable FDF files
+    #[argh(positional)]
+    file_names: Vec<String>,
 
     /// if present, generated files will be put in the specified folder on the Remarkable
     #[argh(option, short = 'p')]
@@ -49,22 +61,19 @@ struct Opt {
     /// directory for output files
     #[argh(option, short = 'o', default = "DEFAULT_DEST_DIR.to_string()")]
     dest_dir: String,
-
-    /// ls, this should be a subcommand
-    #[argh(switch)]
-    ls: bool,
 }
 
-impl Opt {
-    fn validate(self) -> Result<Opt> {
-        if self.alpha > 100 {
-            return Err(Error::AlphaRangeError(self.alpha));
-        }
-        Ok(self)
-    }
-}
+#[derive(FromArgs, Debug)]
+/// list "files" on Remarkable
+#[argh(subcommand, name = "ls")]
+struct LsArgs {}
 
-fn ls(conn: &mut mrktools::Connection) -> Result<()> {
+#[derive(FromArgs, Debug)]
+/// restart the Remarkable
+#[argh(subcommand, name = "restart")]
+struct RestartArgs {}
+
+fn lsf(conn: &mut mrktools::Connection) -> Result<()> {
     let files = conn.files()?;
 
     //let mut file_set: HashSet<&File> = files.iter().collect();
@@ -103,15 +112,9 @@ fn ls_helper(file_hash: &HashMap<String, Vec<&File>>, parent: &str, prefix: &str
     }
 }
 
-fn process_opts(opt: Opt) -> Result<()> {
-    let mut conn = mrktools::Connection::connect(opt.user, opt.host, opt.mount_point)?;
-
-    if opt.ls {
-        return ls(&mut conn);
-    }
-
+fn ipdf(conn: &mut Connection, opt: IPdfArgs) -> Result<()> {
     let should_print = opt.file_names.len() > 1;
-    for file in opt.file_names {
+    Ok(for file in opt.file_names {
         if should_print {
             let base_fn = PathBuf::from(&file)
                 .file_name()
@@ -128,25 +131,50 @@ fn process_opts(opt: Opt) -> Result<()> {
         if let Err(err) = i2pdf(file, opt.to_gray, opt.alpha, parent_id, &opt.dest_dir) {
             error!("{}", err);
         }
-    }
+    })
+}
 
-    if opt.restart {
-        if let Err(err) = conn.restart() {
-            error!("{}", err);
-        }
-    }
-    Ok(())
+fn ls(conn: &mut Connection, _: LsArgs) -> Result<()> {
+    lsf(conn)
+}
+
+fn restart(conn: &Connection, _: RestartArgs) -> Result<()> {
+    conn.restart()
+}
+
+fn with_connection<F>(
+    user: impl AsRef<str>,
+    host: impl AsRef<str>,
+    mount_point: impl AsRef<str>,
+    f: F,
+) -> Result<()>
+where
+    // TODO: get this "mut" out of here
+    F: FnOnce(&mut Connection) -> Result<()>,
+{
+    let mut conn = Connection::connect(user, host, mount_point)?;
+    f(&mut conn)
 }
 
 fn main() {
     pretty_env_logger::init();
 
-    match argh::from_env::<Opt>().validate() {
-        Err(err) => error!("{}", err),
-        Ok(opt) => {
-            if let Err(err) = process_opts(opt) {
-                error!("{}", err)
-            }
+    let args = argh::from_env::<Commands>();
+    if let Err(err) = match args.nested {
+        CommandsEnum::IPdf(a) => {
+            with_connection(&args.user, &args.host, &args.mount_point, |conn| {
+                ipdf(conn, a)
+            })
         }
+        CommandsEnum::Ls(a) => with_connection(&args.user, &args.host, &args.mount_point, |conn| {
+            ls(conn, a)
+        }),
+        CommandsEnum::Restart(a) => {
+            with_connection(&args.user, &args.host, &args.mount_point, |conn| {
+                restart(conn, a)
+            })
+        }
+    } {
+        error!("{}", err);
     }
 }
