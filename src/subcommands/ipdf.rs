@@ -15,7 +15,7 @@ const DEFAULT_DEST_DIR: &str = "./rem";
 const DPI: f64 = 300.0;
 
 #[derive(FromArgs, Debug)]
-/// convert images to Remarkable-ready pdfs with a main thumbnail
+/// convert images to Remarkable pdfs with a thumbnail
 #[argh(subcommand, name = "ipdf")]
 pub struct IPdfArgs {
     /// alpha value to be multiplied by the image, range [0-100].

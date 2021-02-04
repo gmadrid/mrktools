@@ -5,7 +5,7 @@ use argh::FromArgs;
 use std::collections::HashMap;
 
 #[derive(FromArgs, Debug)]
-/// list "files" on Remarkable
+/// list files on Remarkable
 #[argh(subcommand, name = "ls")]
 pub struct LsArgs {}
 
