@@ -10,11 +10,11 @@ use std::path::{Path, PathBuf};
 pub struct CopierArgs {
     /// the source directory
     #[argh(positional)]
-    src: PathBuf,
+    pub(crate) src: PathBuf,
 
     /// the destination directory
     #[argh(positional)]
-    dest: Option<PathBuf>,
+    pub(crate) dest: Option<PathBuf>,
 }
 
 pub fn copy(conn: &Connection, args: CopierArgs) -> Result<()> {

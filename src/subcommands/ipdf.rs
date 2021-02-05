@@ -3,7 +3,7 @@ use crate::remarkable::Connection;
 use crate::remarkable::{create_bare_fs, Content, Metadata, METADATA_EXTENSION};
 use crate::{Error, Result};
 use argh::FromArgs;
-use log::{error, info};
+use log::{error, info, trace};
 use printpdf::*;
 use std::borrow::Cow;
 use std::ffi::OsString;
@@ -38,17 +38,29 @@ pub struct IPdfArgs {
     /// directory for output files
     #[argh(option, short = 'o', default = "DEFAULT_DEST_DIR.to_string()")]
     dest_dir: String,
+
+    /// if present, copy all of the files to the Remarkable device.
+    #[argh(switch, short = 'c')]
+    copy: bool,
+
+    /// if present, restart the Remarkable app before quitting.
+    #[argh(switch, short = 'r')]
+    restart: bool,
 }
 
 pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
     let should_print = opt.file_names.len() > 1;
+    info!(
+        "converting {} files for Remarkable device",
+        opt.file_names.len()
+    );
     for file in opt.file_names {
         if should_print {
             let base_fn = PathBuf::from(&file)
                 .file_name()
                 .map(OsString::from)
                 .unwrap_or_else(|| OsString::from(""));
-            info!("Processing: {}", base_fn.to_string_lossy());
+            trace!("Processing: {}", base_fn.to_string_lossy());
         }
 
         let parent_id = opt
@@ -59,6 +71,18 @@ pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
         if let Err(err) = ipdf_func(file, opt.to_gray, opt.alpha, parent_id, &opt.dest_dir) {
             error!("{}", err);
         }
+    }
+    if opt.copy {
+        use super::copier;
+        let args = copier::CopierArgs {
+            src: PathBuf::from(opt.dest_dir),
+            dest: None,
+        };
+        info!("Copying converted files to Remarkable device.");
+        copier::copy(conn, args)?;
+    }
+    if opt.restart {
+        conn.restart()?;
     }
     Ok(())
 }
