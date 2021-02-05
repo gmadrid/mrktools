@@ -1,6 +1,6 @@
 use argh::FromArgs;
 use log::error;
-use mrktools::subcommands::{ipdf, ls, restart};
+use mrktools::subcommands::{copier, ipdf, ls, restart};
 use mrktools::{Connection, Result};
 
 const MOUNT_POINT_DEFAULT: &str = "/tmp/remarkable_mount";
@@ -30,6 +30,7 @@ struct Commands {
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]
 enum CommandsEnum {
+    Copier(copier::CopierArgs),
     IPdf(ipdf::IPdfArgs),
     Ls(ls::LsArgs),
     Restart(restart::RestartArgs),
@@ -53,6 +54,11 @@ fn main() {
 
     let args = argh::from_env::<Commands>();
     if let Err(err) = match args.nested {
+        CommandsEnum::Copier(a) => {
+            with_connection(&args.user, &args.host, &args.mount_point, |conn| {
+                copier::copy(conn, a)
+            })
+        }
         CommandsEnum::IPdf(a) => {
             with_connection(&args.user, &args.host, &args.mount_point, |conn| {
                 ipdf::ipdf(conn, a)

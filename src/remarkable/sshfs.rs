@@ -26,6 +26,10 @@ impl SshFsMount {
         }
     }
 
+    pub fn mount_point(&self) -> &Path {
+        self.path.as_path()
+    }
+
     pub fn mount(&mut self) -> Result<()> {
         mount_sshdir(&self.user, &self.host, &self.path)?;
         self.mounted = true;

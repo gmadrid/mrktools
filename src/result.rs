@@ -26,6 +26,12 @@ pub enum Error {
 
     #[error("SerdeJsonError: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("StripPrefixError: {0}")]
+    StripPrefixError(#[from] std::path::StripPrefixError),
+
+    #[error("WalkDirError: {0}")]
+    WalkDirError(#[from] walkdir::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

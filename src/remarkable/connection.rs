@@ -4,7 +4,7 @@ use crate::{Error, Result};
 use log::{debug, trace};
 use std::cell::{Ref, RefCell};
 use std::fs::read_dir;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const DATA_DIR: &str = ".local/share/remarkable/xochitl";
@@ -15,7 +15,7 @@ pub struct Connection {
 
     // The connection to the Remarkable filesystem via sshfs.
     // This is never read. When dropped, it umounts the mount point.
-    _mount: SshFsMount,
+    mount: SshFsMount,
 
     // List of files with metadata (or errors, if something couldn't be loaded)
     lazy_files: RefCell<Option<Vec<File>>>,
@@ -39,10 +39,18 @@ impl Connection {
         Ok(Connection {
             user: user.as_ref().to_string(),
             host: host.as_ref().to_string(),
-            _mount: mount,
+            mount: mount,
             lazy_files: Default::default(),
             path,
         })
+    }
+
+    pub fn mount_point(&self) -> &Path {
+        self.mount.mount_point()
+    }
+
+    pub fn data_dir(&self) -> PathBuf {
+        self.mount.mount_point().join(DATA_DIR)
     }
 
     pub fn restart(&self) -> Result<()> {
