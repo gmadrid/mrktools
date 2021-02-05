@@ -1,4 +1,4 @@
-use crate::imgtools::process_image;
+use crate::imgtools::{process_image, ColorTransform};
 use crate::remarkable::Connection;
 use crate::remarkable::{create_bare_fs, Content, Metadata, METADATA_EXTENSION};
 use crate::{Error, Result};
@@ -27,6 +27,10 @@ pub struct IPdfArgs {
     #[argh(switch, short = 'g')]
     to_gray: bool,
 
+    /// convert pdf to dithered black & white
+    #[argh(switch, short = 'b')]
+    to_bw: bool,
+
     /// file names to convert to Remarkable FDF files
     #[argh(positional)]
     file_names: Vec<String>,
@@ -48,13 +52,41 @@ pub struct IPdfArgs {
     restart: bool,
 }
 
+impl IPdfArgs {
+    fn verify(&self) -> Result<()> {
+        if self.alpha > 100 {
+            return Err(Error::AlphaRangeError(self.alpha));
+        }
+
+        if self.to_bw && self.to_gray {
+            return Err(Error::BadArgsError(
+                "--to_bw and --to_gray may not be used together.".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn color_transform(&self) -> ColorTransform {
+        if self.to_bw {
+            ColorTransform::ToBlackAndWhite
+        } else if self.to_gray {
+            ColorTransform::ToGrayscale
+        } else {
+            ColorTransform::None
+        }
+    }
+}
+
 pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
+    opt.verify()?;
+
     let should_print = opt.file_names.len() > 1;
     info!(
         "converting {} files for Remarkable device",
         opt.file_names.len()
     );
-    for file in opt.file_names {
+    for file in &opt.file_names {
         if should_print {
             let base_fn = PathBuf::from(&file)
                 .file_name()
@@ -68,7 +100,13 @@ pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
             .as_ref()
             .map(|p| conn.find_folder(p))
             .transpose()?;
-        if let Err(err) = ipdf_func(file, opt.to_gray, opt.alpha, parent_id, &opt.dest_dir) {
+        if let Err(err) = ipdf_func(
+            file,
+            opt.color_transform(),
+            opt.alpha,
+            parent_id,
+            &opt.dest_dir,
+        ) {
             error!("{}", err);
         }
     }
@@ -89,7 +127,7 @@ pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
 
 fn ipdf_func(
     img: impl AsRef<Path>,
-    to_gray: bool,
+    color_transform: ColorTransform,
     alpha: u8,
     parent: Option<impl AsRef<str>>,
     output_dir: impl AsRef<Path>,
@@ -105,7 +143,7 @@ fn ipdf_func(
     let base = create_bare_fs(&uu, &output_dir)?;
 
     let image = open_image(img.as_ref())?;
-    let processed_image = process_image(&image, to_gray, alpha)?;
+    let processed_image = process_image(&image, color_transform, alpha)?;
 
     let pdf = create_pdf(&img.as_ref().to_string_lossy(), &processed_image);
     let outfile = base.with_extension("pdf");

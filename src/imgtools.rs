@@ -3,6 +3,13 @@ use printpdf::image::imageops;
 use printpdf::image::{DynamicImage, ImageBuffer, Luma, Pixel, Primitive, Rgb};
 use std::borrow::Cow;
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ColorTransform {
+    ToBlackAndWhite,
+    ToGrayscale,
+    None,
+}
+
 trait MulAlpha
 where
     Self: Pixel + 'static,
@@ -96,12 +103,25 @@ fn mul_alpha_to_image(img: &DynamicImage, alpha: f32) -> DynamicImage {
 ///
 /// If `alpha` is true, the image will be multiplied by its value. Legal values are
 /// `0-100`, where 100 = opaque, 0 = fully transparent.
-pub fn process_image(img: &DynamicImage, to_gray: bool, alpha: u8) -> Result<Cow<DynamicImage>> {
+pub fn process_image(
+    img: &DynamicImage,
+    color_transform: ColorTransform,
+    alpha: u8,
+) -> Result<Cow<DynamicImage>> {
     let mut output = Cow::Borrowed(img);
 
-    if to_gray {
-        let temp = DynamicImage::ImageLuma8(imageops::grayscale(output.as_ref()));
-        output = Cow::Owned(temp);
+    match color_transform {
+        ColorTransform::ToGrayscale => {
+            let temp = DynamicImage::ImageLuma8(imageops::grayscale(output.as_ref()));
+            output = Cow::Owned(temp);
+        }
+        ColorTransform::ToBlackAndWhite => {
+            // TODO: have a way to dial in the exact threshold for B/W.
+            let mut gray = imageops::grayscale(output.as_ref());
+            imageops::colorops::dither(&mut gray, &imageops::colorops::BiLevel);
+            output = Cow::Owned(DynamicImage::ImageLuma8(gray));
+        }
+        ColorTransform::None => {}
     }
 
     if alpha < 100 {
