@@ -1,3 +1,4 @@
 /target
 /rem
 .DS_Store
+*.list

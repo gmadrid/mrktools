@@ -27,11 +27,11 @@ pub const METADATA_EXTENSION: &str = "metadata";
 ///
 /// extension           | type           | create  | description
 /// --------------------|----------------|---------|------------
-/// ___<none>___        | __directory__	 | __Yes__ | annotations will be stored here
-/// .cache	            | directory      | No      | not sure but empty initially
-/// .content            | file	         | No      | information including uuids for each page
+/// ___<none>___        | __directory__  | __Yes__ | annotations will be stored here
+/// .cache              | directory      | No      | not sure but empty initially
+/// .content            | file           | No      | information including uuids for each page
 /// __.highlights__     | __directory__  | __Yes__ | not sure but empty initially
-/// .metadata           | file	         | No      | name, dates, type
+/// .metadata           | file           | No      | name, dates, type
 /// .pagedata           | file           | No      | list of templates, one per page
 /// .pdf                | file           | No      | the actual PDF uploaded
 /// __.textconversion__ | __directory__  | __Yes__ | for converted annotations; empty initially

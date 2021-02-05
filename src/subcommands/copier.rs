@@ -8,31 +8,45 @@ use std::path::{Path, PathBuf};
 /// list files on Remarkable
 #[argh(subcommand, name = "copy")]
 pub struct CopierArgs {
+    /// if present, restart the Remarkable app before quitting.
+    #[argh(switch, short = 'r')]
+    restart: bool,
+
     /// the source directory
     #[argh(positional)]
-    pub(crate) src: PathBuf,
+    src: PathBuf,
 
     /// the destination directory
     #[argh(positional)]
-    pub(crate) dest: Option<PathBuf>,
+    dest: Option<PathBuf>,
 }
 
 pub fn copy(conn: &Connection, args: CopierArgs) -> Result<()> {
-    // There will always be a source.
-    let src = args.src.as_path();
+    copy_fn(conn, args.src, args.dest)?;
 
-    // If no destination is provided, then default to the connection mount point.
-    let data_dir = conn.data_dir();
-    let dst = args
-        .dest
-        .as_ref()
-        .map(|d| d.as_path())
-        .unwrap_or(data_dir.as_path());
-
-    copy_fn(src, dst)
+    if args.restart {
+        conn.restart()?;
+    }
+    Ok(())
 }
 
-fn copy_fn(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+pub fn copy_fn(
+    conn: &Connection,
+    src: impl AsRef<Path>,
+    dst: Option<impl AsRef<Path>>,
+) -> Result<()> {
+    // TODO: can we avoid this call unless necessary?
+    let data_dir = conn.data_dir();
+    let dst = dst
+        .as_ref()
+        .map(|d| d.as_ref())
+        .unwrap_or_else(|| data_dir.as_path());
+
+    copy_helper(src, dst)?;
+    Ok(())
+}
+
+fn copy_helper(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
     info!("Copying from {:?} to {:?}", src.as_ref(), dst.as_ref());
 
     let mut files = Vec::default();

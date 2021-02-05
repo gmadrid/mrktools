@@ -39,7 +39,7 @@ impl Connection {
         Ok(Connection {
             user: user.as_ref().to_string(),
             host: host.as_ref().to_string(),
-            mount: mount,
+            mount,
             lazy_files: Default::default(),
             path,
         })

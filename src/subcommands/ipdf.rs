@@ -100,6 +100,7 @@ pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
             .as_ref()
             .map(|p| conn.find_folder(p))
             .transpose()?;
+
         if let Err(err) = ipdf_func(
             file,
             opt.color_transform(),
@@ -112,12 +113,8 @@ pub fn ipdf(conn: &Connection, opt: IPdfArgs) -> Result<()> {
     }
     if opt.copy {
         use super::copier;
-        let args = copier::CopierArgs {
-            src: PathBuf::from(opt.dest_dir),
-            dest: None,
-        };
         info!("Copying converted files to Remarkable device.");
-        copier::copy(conn, args)?;
+        copier::copy_fn(conn, Path::new(&opt.dest_dir), None::<&Path>)?;
     }
     if opt.restart {
         conn.restart()?;
