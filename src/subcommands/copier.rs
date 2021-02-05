@@ -21,7 +21,7 @@ pub fn copy(conn: &Connection, args: CopierArgs) -> Result<()> {
     // There will always be a source.
     let src = args.src.as_path();
 
-    // If no destination is provided, then defaunt to the connection mount point.
+    // If no destination is provided, then default to the connection mount point.
     let data_dir = conn.data_dir();
     let dst = args
         .dest
@@ -32,7 +32,7 @@ pub fn copy(conn: &Connection, args: CopierArgs) -> Result<()> {
     copy_fn(src, dst)
 }
 
-pub(crate) fn copy_fn(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
+fn copy_fn(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
     info!("Copying from {:?} to {:?}", src.as_ref(), dst.as_ref());
 
     let mut files = Vec::default();
