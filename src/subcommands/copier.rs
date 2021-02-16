@@ -5,7 +5,7 @@ use log::{info, trace};
 use std::path::{Path, PathBuf};
 
 #[derive(FromArgs, Debug)]
-/// list files on Remarkable
+/// copy files to the reMarkable data directory
 #[argh(subcommand, name = "copy")]
 pub struct CopierArgs {
     /// if present, restart the Remarkable app before quitting.
