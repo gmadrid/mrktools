@@ -26,8 +26,10 @@ Since everything is done over a `ssh` tunnel, the `host` param is almost
 always required.
 
 * `--host` - the IP address or hostname of the Remarkable device.
+
 * `--user` - the username of the root user on the device. Defaults to `root`
 and there is probably no reason to change it
+
 * `--mount_point` - a non-existing directory to use as a mount point for
 `sshfs`. Defaults to `./rem`.
 
@@ -106,4 +108,4 @@ thumbnails. Just copying a PDF to the device will often not get a thumb.)
 
 * [Filesystem Layout](https://remarkablewiki.com/tech/filesystem) - from the
 reMarkableWiki. This is an invaluable resource for anyone doing anything
-with the reMarkable. 
+with the reMarkable.
